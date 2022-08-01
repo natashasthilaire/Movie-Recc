@@ -10,10 +10,40 @@
 #include "homeScreen.h"
 #include "resultScreen.h"
 using namespace std; 
-#include <random>
-std::random_device rd; // obtain a random number from hardware
-std::mt19937 gen(rd()); // seed the generator
-std::uniform_int_distribution<> distr(0, 5); // define the range
+
+//sorry I'm not sure where you'd want this but I used the global variable on line 43 "cont" to calculate the rating
+unordered_map<string, vector<pair<string, float>>> SetCont(string filename) {
+    ifstream File(filename, ios::in);
+    unordered_map<string, vector<pair<string, float>>> g;
+    if (File.is_open()) {
+        string line;
+        string from, to, wt;  //userID, movieID, rating
+        getline(File, line);
+        int count = 0;
+        while (getline(File, line)) {
+
+            istringstream stream(line);
+            stringstream ss(line);
+
+            getline(stream, from, ',');
+            getline(stream, to, ',');
+            getline(stream, wt);
+
+            g[to].push_back(make_pair(from, stoi(wt)));
+            
+        }
+        File.close();
+    }
+    else {
+        cout << "Error: " << filename << "could not be opened!" << endl;
+    }
+    return g;
+}
+
+unordered_map<string, vector<pair<string, float>>> cont = SetCont("ratings2.csv");
+//std::random_device rd; // obtain a random number from hardware
+//std::mt19937 gen(rd()); // seed the generator
+//std::uniform_int_distribution<> distr(0, 5); // define the range
 
 vector<Movie*> primary::m;
 AdjacencyList primary::l;
@@ -27,56 +57,44 @@ priority_queue<Movie*, vector<Movie*>, Compare> primary::MovieRanker;
 //    return left.avgRating < right.avgRating;
 //}
 
-void primary::LoadRatings(string filename) {
-    ifstream File(filename, ios::in);
-    if (File.is_open()) {
-        string line;
-        string from, to, wt;  //userID, movieID, rating
-        getline(File, line);
 
-        while (getline(File, line)) {
+void primary::LoadData(string filename, vector<Movie>& movie, AdjacencyList& l) {
+     ifstream File(filename, ios::in);
 
-            istringstream stream(line);
-            stringstream ss(line);
-
-            getline(stream, from, ',');
-            getline(stream, to, ',');
-            getline(stream, wt);
-
-            l.buildoutgoing(from, to, wt);
-
-
-        }
-        File.close();
-    }
-    else {
-        cout << "Error: " << filename << "could not be opened!" << endl;
-    }
-    return;
-}
-
-void primary::LoadData(string filename) {
-    //AdjacencyList l;
-    ifstream File(filename, ios::in);
     if (File.is_open()) {
         string line;
         getline(File, line);
-
+        int count = 0;
         while (getline(File, line)) {
-
+            
             istringstream stream(line);
             stringstream ss(line);
 
             string s;
             Movie temp;
-            string year;
 
             getline(stream, temp.movieID, ',');
             getline(stream, temp.title, '(');
-            getline(stream, year, ')');
+            getline(stream, temp.year, ')');
+            getline(stream, temp.genre, ',');
+            getline(stream, temp.genre, ',');
+
+            temp.genres = getGenres(temp.genre, "|");
+           
+            temp.avgRating = l.Rating(temp.movieID);
             
-            /*cout << m.size() << " : begin year:" << year << endl;
-            if (year == "" || year == "no genres listed") {
+            movie.push_back(temp);  
+
+        }
+
+        File.close();
+    }
+    else {
+        cout << "Error: " << filename << "could not be opened!" << endl;
+    }
+
+    return;
+    /*        if (year == "" || year == "no genres listed") {
                 year = '0';
             }
             else {
@@ -95,7 +113,7 @@ void primary::LoadData(string filename) {
                     }
                 } while (invalid);
             }
-            */
+            
             
             //cout << "result year: " << year << endl;
             temp.year = year;
@@ -116,7 +134,7 @@ void primary::LoadData(string filename) {
         cout << "Error: " << filename << "could not be opened!" << endl;
     }
 
-    return;
+    return; */
 }
 
 vector<string> primary::getGenres(string s, string delim) {
@@ -133,28 +151,6 @@ vector<string> primary::getGenres(string s, string delim) {
     return res;
 }
 
-
-
-int primary::GRating(Movie* m, AdjacencyList& l) {
-    // AdjacencyList l;
-
-    double avgReview = 0;
-    if (l.graphingoing.find(m->movieID) == l.graphingoing.end()) {
-        return 1;
-    }
-
-    for (auto it = l.graphingoing[m->movieID].begin(); it != l.graphingoing[m->movieID].end(); ++it) {
-        avgReview += (it->second);
-    };
-
-    int size = l.graphingoing[m->movieID].size();
-    avgReview /= size;
-    int avg = (int)(avgReview + 0.5);
-
-    m->avgRating = avg;
-    return avg;
-}
-
 void primary::Print(Movie& m) {
     cout << "Title: " << m.title << endl;
     cout << "Year: " << m.year << endl;
@@ -167,27 +163,14 @@ void primary::Print(Movie& m) {
     cout << "Average rating: " << m.avgRating << "/5" << endl;
 }
 
-int primary::r_helper(AdjacencyList& l, string s) {
-    return l.Rating(s);
-}
-
-int primary::r(string s) {
-    AdjacencyList h;
-    return r_helper(h, s);
-}
-
-
 void primary::getResults() {
     string genre = homeScreen::getGenre();
-    int start_year = homeScreen::getYearMin(); //1995 - 2017
+    int start_year = homeScreen::getYearMin(); //1995 - 2019
     int end_year = homeScreen::getYearMax();
     int minStars = homeScreen::getStars();
     int numResults = homeScreen::getNumResults();
     //for (int i = 0; i < m.size(); i++) {
-    for (int i = 0; i < 500; i++) {
-        //GRating(m[i], l);
-        /*Movie* temp = m[i];
-        temp->avgRating = l.Rating(temp->movieID);*/
+    /*for (int i = 0; i < 500; i++) {
         cout << "m[" << i << "]->year : " << m[i]->year << endl;
         if (stoi(m[i]->year) >= start_year && stoi(m[i]->year) <= end_year && m[i]->avgRating >= minStars
             && count(m[i]->genres.begin(), m[i]->genres.end(), genre)){
@@ -195,7 +178,17 @@ void primary::getResults() {
             && count(m[i]->genres.begin(), m[i]->genres.end(), genre)) {*/
             MovieRanker.push(m[i]);
         }
+    }*/
+        for (int i = 0; i < m.size(); i++) {
+        if (m[i].year >= to_string(start_year) && m[i].year <= to_string(end_year) 
+            && count(m[i].genres.begin(), m[i].genres.end(), genre))
+        {
+            MovieRanker.push(m[i]);
+        }
+       
     }
+
+        
 }
 
 
