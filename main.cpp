@@ -71,7 +71,7 @@ int main(){
 
     //cin >> numResults;
  
-    Fl_Window* window = new Fl_Window(800, 600, "Movie  Recommender");
+    Fl_Window* window = new Fl_Window(800, 600, "Movie  Generator");
     window->begin();
     window->color(FL_BLACK);
     homeScreen::title();
