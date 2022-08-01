@@ -6,7 +6,7 @@
 #include "movie.h"
 #include "AdjacencyList.h"
 using namespace std;
-
+extern unordered_map<string, vector<pair<string, float>>> cont;
 
 class Compare {
 public:
@@ -15,14 +15,9 @@ public:
 
 class primary {
 public:
-    static void LoadRatings(string filename);
-    static void LoadData(string filename);
-
+    static void LoadData(string filename, vector<Movie>& movie, AdjacencyList& l);
     static vector<string> getGenres(string s, string delim);
-    static int GRating(Movie* m, AdjacencyList& l);
-    static void Print(Movie& m);
-    static int r_helper(AdjacencyList& l, string s);
-    static int r(string s);  
+    static void Print(Movie& m); 
     static void getResults();
     static void setBuff();
 
